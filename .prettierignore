@@ -1,0 +1,35 @@
+# --- Languages fully or experimentally formatted by Biome ---
+
+# JavaScript / TypeScript family
+*.js
+*.mjs
+*.cjs
+*.jsx
+*.ts
+*.tsx
+
+# JSON / JSONC
+*.json
+*.jsonc
+
+# Restore exceptions (Prettier should *format* these)
+!package.json
+
+# Stylesheets
+*.css
+
+# GraphQL
+*.graphql
+*.gql
+
+# GritQL
+*.grit
+
+# --- Project directories Prettier should never touch ---
+node_modules/
+dist/
+build/
+coverage/
+.cache/
+.temp/
+.tmp/

@@ -1,0 +1,42 @@
+[tools]
+bun = "latest"
+
+[settings.npm]
+bun = true
+
+[hooks]
+postinstall = """
+if [ "$CI" = "true" ]; then
+  exit 0
+fi
+
+bun install
+"""
+
+[env]
+_.path = ["{{config_root}}/.shims", '{{config_root}}/node_modules/.bin']
+
+[tasks.fmt]
+description = "Format the entire project"
+run = "prettier --write ."
+
+[tasks.lint]
+description = "Lint the entire project"
+run = "biome check --write --unsafe ."
+
+[tasks.test]
+description = "Run all unit tests in the project"
+run = "bun test"
+
+[tasks.typecheck]
+description = "Typecheck the entire project"
+run = "tsgo --noEmit"
+
+[tasks.fix]
+description = "Format and lint the entire project"
+depends = ["fmt", "lint"]
+
+[tasks.check]
+description = "Lint, test and typecheck the entire project"
+depends = ["fix"]
+depends_post = ["test", "typecheck"]

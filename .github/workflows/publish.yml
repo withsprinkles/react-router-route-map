@@ -1,0 +1,91 @@
+name: Publish to npm
+
+on:
+    release:
+        types: [published]
+    # workflow_dispatch:
+
+permissions:
+    contents: read
+    id-token: write
+
+jobs:
+    publish:
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v4
+
+            - name: ⚙️ Setup build tools
+              uses: jdx/mise-action@v2
+
+            - name: 🗄️ Cache dependencies
+              uses: actions/cache@v3
+              with:
+                  path: ~/.bun/install/cache
+                  key: ${{ runner.os }}-bun-${{ hashFiles('**/bun.lock') }}
+                  restore-keys: |
+                      ${{ runner.os }}-bun-
+
+            - name: 📦 Install dependencies
+              run: bun install --frozen-lockfile
+
+            - name: Run tests
+              run: mise run test
+
+            - name: Build package
+              run: mise run build
+
+            - name: Derive npm tag from git tag
+              id: derive_tag
+              run: |
+                  # GITHUB_REF_NAME is e.g. "v0.1.0" / "v1.0.0-alpha.0" / "v2.3.1" or branch name
+                  VERSION="${GITHUB_REF_NAME#v}"
+
+                  echo "Detected version: $VERSION"
+
+                  NPM_TAG="latest"
+
+                  # Check if VERSION looks like a semver version (starts with a digit)
+                  if [[ "$VERSION" =~ ^[0-9] ]]; then
+                    # Extract MAJOR (before first dot)
+                    MAJOR="${VERSION%%.*}"
+
+                    if [ "$MAJOR" -eq 0 ]; then
+                      # All pre-1.0.0 releases go to the alpha channel
+                      NPM_TAG="alpha"
+                    else
+                      # 1.0.0 and above
+                      if [[ "$VERSION" == *-* ]]; then
+                        # Has a prerelease part, e.g. "1.0.0-alpha.0"
+                        PRERELEASE="${VERSION#*-}"       # "alpha.0"
+                        CHANNEL="${PRERELEASE%%.*}"      # "alpha"
+                        NPM_TAG="$CHANNEL"
+                      else
+                        # Stable 1.0.0+ release
+                        NPM_TAG="latest"
+                      fi
+                    fi
+                  fi
+
+                  echo "Resolved npm tag: $NPM_TAG"
+
+                  echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+                  echo "npm_tag=$NPM_TAG" >> "$GITHUB_OUTPUT"
+
+            - name: Setup npm authentication
+              run: |
+                  cat << EOF > .npmrc
+                  //registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}
+                  EOF
+
+            - name: Publish to npm
+              run: |
+                  # Publish with the derived tag
+                  bun publish --access public --tag "${{ steps.derive_tag.outputs.npm_tag }}"
+
+                  # For pre-1.0 versions (alpha), also add the latest tag
+                  if [ "${{ steps.derive_tag.outputs.npm_tag }}" = "alpha" ]; then
+                    echo "Adding 'latest' tag to pre-1.0 release..."
+                    npm dist-tag add @withsprinkles/react-router-route-map@${{ steps.derive_tag.outputs.version }} latest
+                  fi
