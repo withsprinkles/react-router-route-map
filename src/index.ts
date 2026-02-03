@@ -1,8 +1,13 @@
 import type { RouteConfigEntry } from "@react-router/dev/routes";
-import { index as rrIndex, layout as rrLayout, route as rrRoute } from "@react-router/dev/routes";
 import { RoutePattern, type RoutePatternOptions } from "@remix-run/route-pattern";
 
 export const RouteConfig = Symbol.for("RouteConfig");
+
+type DevRoutes = typeof import("@react-router/dev/routes");
+
+async function getDevRoutes(): Promise<DevRoutes> {
+    return import("@react-router/dev/routes");
+}
 
 // MARK: Types
 
@@ -169,18 +174,24 @@ export class Route<Pattern extends string = string> extends RoutePattern<Pattern
         return searchPart.split("&");
     }
 
-    toRouteConfig(): RouteConfigEntry | RouteConfigEntry[] {
+    async toRouteConfig(): Promise<RouteConfigEntry | RouteConfigEntry[]> {
+        const { index: rrIndex, layout: rrLayout, route: rrRoute } = await getDevRoutes();
+
         if (this.#isIndex && this.#file) {
             return rrIndex(this.#file);
         }
 
         if (this.#isLayout && this.#file) {
             const childConfigs = this.children
-                ? Object.values(this.children).flatMap(child =>
-                      child instanceof Route ? child.toRouteConfig() : [],
-                  )
+                ? (
+                      await Promise.all(
+                          Object.values(this.children).map(child =>
+                              child instanceof Route ? child.toRouteConfig() : [],
+                          ),
+                      )
+                  ).flat()
                 : [];
-            return rrLayout(this.#file, childConfigs);
+            return rrLayout(this.#file, childConfigs as RouteConfigEntry[]);
         }
 
         if (this.#file) {
@@ -196,12 +207,16 @@ export class Route<Pattern extends string = string> extends RoutePattern<Pattern
 
         // For prefix-only routes (no file)
         const childConfigs = this.children
-            ? Object.values(this.children).flatMap(child =>
-                  child instanceof Route ? child.toRouteConfig() : [],
-              )
+            ? (
+                  await Promise.all(
+                      Object.values(this.children).map(child =>
+                          child instanceof Route ? child.toRouteConfig() : [],
+                      ),
+                  )
+              ).flat()
             : [];
 
-        return childConfigs;
+        return childConfigs as RouteConfigEntry[];
     }
 }
 
@@ -209,23 +224,19 @@ export type Routes<T> = T & {
     [RouteConfig]: RouteConfigEntry | RouteConfigEntry[];
 };
 
-export function createRoutes<TRouteMap>(routeMap: TRouteMap): Routes<TRouteMap> {
-    const {
-        index: rrIndex,
-        layout: rrLayout,
-        route: rrRoute,
-        prefix: rrPrefix,
-    } = require("@react-router/dev/routes");
+export async function createRoutes<TRouteMap>(routeMap: TRouteMap): Promise<Routes<TRouteMap>> {
+    const { index: rrIndex, layout: rrLayout, route: rrRoute, prefix: rrPrefix } =
+        await getDevRoutes();
 
     const config: RouteConfigEntry[] = [];
 
-    function processRouteMap(map: any): RouteConfigEntry[] {
+    async function processRouteMap(map: any): Promise<RouteConfigEntry[]> {
         const entries: RouteConfigEntry[] = [];
 
         for (const [_key, value] of Object.entries(map)) {
             if (value instanceof Route) {
                 // Simple route
-                const config = value.toRouteConfig();
+                const config = await value.toRouteConfig();
                 if (Array.isArray(config)) {
                     entries.push(...config);
                 } else {
@@ -236,9 +247,13 @@ export function createRoutes<TRouteMap>(routeMap: TRouteMap): Routes<TRouteMap> 
                 // Check for layout
                 if (valueAny.__layoutFile) {
                     const layoutFile = valueAny.__layoutFile;
-                    const childConfigs = Object.values(value)
-                        .filter(v => v instanceof Route)
-                        .flatMap(child => (child as Route).toRouteConfig());
+                    const childConfigs = (
+                        await Promise.all(
+                            Object.values(value)
+                                .filter(v => v instanceof Route)
+                                .map(child => (child as Route).toRouteConfig()),
+                        )
+                    ).flat();
                     entries.push(rrLayout(layoutFile, childConfigs));
                 }
                 // Check for prefix
@@ -246,9 +261,13 @@ export function createRoutes<TRouteMap>(routeMap: TRouteMap): Routes<TRouteMap> 
                     const prefixPath = valueAny.__prefix;
                     // Use the original (non-prefixed) routes for config generation
                     const originalRoutes = valueAny.__originalRoutes || value;
-                    const childConfigs = Object.values(originalRoutes)
-                        .filter(v => v instanceof Route)
-                        .flatMap(child => (child as Route).toRouteConfig());
+                    const childConfigs = (
+                        await Promise.all(
+                            Object.values(originalRoutes)
+                                .filter(v => v instanceof Route)
+                                .map(child => (child as Route).toRouteConfig()),
+                        )
+                    ).flat();
                     entries.push(...rrPrefix(prefixPath, childConfigs));
                 }
                 // Check for resources/resource or route with children
@@ -256,9 +275,13 @@ export function createRoutes<TRouteMap>(routeMap: TRouteMap): Routes<TRouteMap> 
                     const parentPath = valueAny.__parentPath;
                     const parentFile = valueAny.__parentFile;
                     const childRoutes = valueAny.__childRoutes || value;
-                    const childConfigs = Object.values(childRoutes)
-                        .filter(v => v instanceof Route)
-                        .flatMap(child => (child as Route).toRouteConfig());
+                    const childConfigs = (
+                        await Promise.all(
+                            Object.values(childRoutes)
+                                .filter(v => v instanceof Route)
+                                .map(child => (child as Route).toRouteConfig()),
+                        )
+                    ).flat();
                     entries.push(rrRoute(parentPath, parentFile, childConfigs));
                 }
             }
@@ -267,7 +290,7 @@ export function createRoutes<TRouteMap>(routeMap: TRouteMap): Routes<TRouteMap> 
         return entries;
     }
 
-    config.push(...processRouteMap(routeMap));
+    config.push(...(await processRouteMap(routeMap)));
 
     const result = routeMap as Routes<TRouteMap>;
     (result as any)[RouteConfig] = config;
