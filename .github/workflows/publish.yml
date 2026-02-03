@@ -73,19 +73,11 @@ jobs:
                   echo "version=$VERSION" >> "$GITHUB_OUTPUT"
                   echo "npm_tag=$NPM_TAG" >> "$GITHUB_OUTPUT"
 
-            - name: Setup npm authentication
-              run: |
-                  cat << EOF > .npmrc
-                  //registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}
-                  EOF
+            - name: Setup Node.js for npm publish
+              uses: actions/setup-node@v4
+              with:
+                  node-version: "22"
 
-            - name: Publish to npm
+            - name: Publish to npm with provenance
               run: |
-                  # Publish with the derived tag
-                  bun publish --access public --tag "${{ steps.derive_tag.outputs.npm_tag }}"
-
-                  # For pre-1.0 versions (alpha), also add the latest tag
-                  if [ "${{ steps.derive_tag.outputs.npm_tag }}" = "alpha" ]; then
-                    echo "Adding 'latest' tag to pre-1.0 release..."
-                    npm dist-tag add @withsprinkles/react-router-route-map@${{ steps.derive_tag.outputs.version }} latest
-                  fi
+                  npm publish --provenance --access public --tag "${{ steps.derive_tag.outputs.npm_tag }}"
