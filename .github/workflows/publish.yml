@@ -73,6 +73,19 @@ jobs:
                   echo "version=$VERSION" >> "$GITHUB_OUTPUT"
                   echo "npm_tag=$NPM_TAG" >> "$GITHUB_OUTPUT"
 
+            - name: Debug toolchain
+              run: |
+                  set -x
+                  command -v node || true
+                  command -v npm || true
+                  node -v || true
+                  npm -v || true
+                  npm config get registry || true
+                  npm config get node-options || true
+                  npm config get openssl-fips || true
+                  npm config list -l || true
+                  openssl version || true
+
             - name: Publish to npm with provenance
               run: |
                   NODE_OPTIONS="--openssl-legacy-provider" npm publish --provenance --access public --tag "${{ steps.derive_tag.outputs.npm_tag }}"
