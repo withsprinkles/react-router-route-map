@@ -1,6 +1,6 @@
 [tools]
 bun = "latest"
-node = "lts"
+npm = "latest"
 
 [settings.npm]
 bun = true
