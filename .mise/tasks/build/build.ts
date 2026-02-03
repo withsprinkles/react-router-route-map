@@ -11,7 +11,7 @@ export async function build() {
         outdir: "dist",
         format: "esm",
         sourcemap: "external",
-        target: "node",
+        target: "browser",
         root: "src",
         packages: "external",
         plugins: [dts()],
