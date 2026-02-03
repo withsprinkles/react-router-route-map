@@ -225,8 +225,12 @@ export type Routes<T> = T & {
 };
 
 export async function createRoutes<TRouteMap>(routeMap: TRouteMap): Promise<Routes<TRouteMap>> {
-    const { index: rrIndex, layout: rrLayout, route: rrRoute, prefix: rrPrefix } =
-        await getDevRoutes();
+    const {
+        index: rrIndex,
+        layout: rrLayout,
+        route: rrRoute,
+        prefix: rrPrefix,
+    } = await getDevRoutes();
 
     const config: RouteConfigEntry[] = [];
 
