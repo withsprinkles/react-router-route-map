@@ -74,7 +74,6 @@ jobs:
                   echo "npm_tag=$NPM_TAG" >> "$GITHUB_OUTPUT"
 
             - name: Publish to npm with provenance
-              env:
-                  NODE_OPTIONS: --openssl-legacy-provider
               run: |
+                  export NODE_OPTIONS="--openssl-legacy-provider"
                   npm publish --provenance --access public --tag "${{ steps.derive_tag.outputs.npm_tag }}"
