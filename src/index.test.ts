@@ -1,4 +1,4 @@
-import { describe, expect, expectTypeOf, test } from "bun:test";
+import { beforeAll, describe, expect, expectTypeOf, test } from "bun:test";
 import {
     index as rrIndex,
     layout as rrLayout,
@@ -11,13 +11,14 @@ import {
     layout,
     prefix,
     type Route,
+    type Routes,
     RouteConfig,
     resource,
     resources,
     route,
 } from "./index.ts";
 
-export const routes = createRoutes({
+const routeMap = {
     index: index("./home.tsx"),
     about: route("/about", "./about.tsx"),
     auth: layout("./auth/layout.tsx", {
@@ -34,6 +35,13 @@ export const routes = createRoutes({
         param: "name",
     }),
     user: resource("/user"),
+};
+
+type RoutesType = Routes<typeof routeMap>;
+let routes: RoutesType;
+
+beforeAll(async () => {
+    routes = await createRoutes(routeMap);
 });
 
 test("generates correct React Router config", () => {
