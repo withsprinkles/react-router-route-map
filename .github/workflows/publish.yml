@@ -75,5 +75,4 @@ jobs:
 
             - name: Publish to npm with provenance
               run: |
-                  export NODE_OPTIONS="--openssl-legacy-provider"
-                  npm publish --provenance --access public --tag "${{ steps.derive_tag.outputs.npm_tag }}"
+                  NODE_OPTIONS="--openssl-legacy-provider" npm publish --provenance --access public --tag "${{ steps.derive_tag.outputs.npm_tag }}"
