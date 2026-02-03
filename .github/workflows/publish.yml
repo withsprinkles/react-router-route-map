@@ -76,3 +76,8 @@ jobs:
             - name: Publish to npm with provenance
               run: |
                   NODE_OPTIONS="--openssl-legacy-provider" npm publish --provenance --access public --tag "${{ steps.derive_tag.outputs.npm_tag }}"
+
+                  if [ "${{ steps.derive_tag.outputs.npm_tag }}" = "alpha" ]; then
+                    echo "Adding 'latest' tag to pre-1.0 release..."
+                    npm dist-tag add @withsprinkles/react-router-route-map@${{ steps.derive_tag.outputs.version }} latest
+                  fi
