@@ -73,11 +73,6 @@ jobs:
                   echo "version=$VERSION" >> "$GITHUB_OUTPUT"
                   echo "npm_tag=$NPM_TAG" >> "$GITHUB_OUTPUT"
 
-            - name: Setup Node.js for npm publish
-              uses: actions/setup-node@v4
-              with:
-                  node-version: "22"
-
             - name: Publish to npm with provenance
               run: |
                   npm publish --provenance --access public --tag "${{ steps.derive_tag.outputs.npm_tag }}"
