@@ -38,6 +38,11 @@ const routeMap = {
     nested: {
         some: route("/some-route", "./some-route.tsx"),
         other: route("/other-route", "./other-route.tsx"),
+        deeply: {
+            nested: {
+                route: route("/deeply-nested-route", "./deeply-nested-route.tsx"),
+            },
+        },
     },
 };
 
@@ -75,8 +80,9 @@ test("generates correct React Router config", () => {
             rrRoute("edit", "./user/edit.tsx"),
         ]),
 
-        rrRoute("/some-route", "./some-route.tsx"),
-        rrRoute("/other-route", "./other-route.tsx"),
+        rrRoute("some-route", "./some-route.tsx"),
+        rrRoute("other-route", "./other-route.tsx"),
+        rrRoute("deeply-nested-route", "./deeply-nested-route.tsx"),
     ]);
 });
 

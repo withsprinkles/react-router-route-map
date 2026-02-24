@@ -288,6 +288,11 @@ export async function createRoutes<TRouteMap>(routeMap: TRouteMap): Promise<Rout
                     ).flat();
                     entries.push(rrRoute(parentPath, parentFile, childConfigs));
                 }
+                // Plain nested object - recursively process it
+                else {
+                    const nestedEntries = await processRouteMap(value);
+                    entries.push(...nestedEntries);
+                }
             }
         }
 
