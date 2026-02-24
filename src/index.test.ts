@@ -35,6 +35,10 @@ const routeMap = {
         param: "name",
     }),
     user: resource("/user"),
+    nested: {
+        some: route("/some-route", "./some-route.tsx"),
+        other: route("/other-route", "./other-route.tsx"),
+    },
 };
 
 type RoutesType = Routes<typeof routeMap>;
@@ -70,6 +74,9 @@ test("generates correct React Router config", () => {
             rrRoute("new", "./user/new.tsx"),
             rrRoute("edit", "./user/edit.tsx"),
         ]),
+
+        rrRoute("/some-route", "./some-route.tsx"),
+        rrRoute("/other-route", "./other-route.tsx"),
     ]);
 });
 
